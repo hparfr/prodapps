@@ -104,6 +104,9 @@ angular.module('prodapps')
 
           //for locking the line when it's filled and valid
           l.lock = newVal._v.locks[idx];
+
+          //use offcut (don't decrease input stock in odoo)
+          l.useOffcut = false;
           return l;
         });
 
@@ -160,8 +163,11 @@ angular.module('prodapps')
       item.rack = item._v.lines.map(function (r) {
         return r.rack; 
       });
+      item.offcutRatio = item._v.lines.reduce(function (prec, line, idx, arr) {
+        return (line.useOffcut) ? prec + 1 /arr.length : prec;
+      }, 0);
 
-      jsonRpc.call('mrp.production.workcenter.line', 'prodoo_action_done', [item.id, item.rack ]).then(function () {
+      jsonRpc.call('mrp.production.workcenter.line', 'prodoo_action_done', [item.id, item.rack, item.offcutRatio ]).then(function () {
         item.state = 'done';
         $notification('Done');
         $scope.$broadcast('syncAfterDone', item);
@@ -182,6 +188,11 @@ angular.module('prodapps')
     $scope.machine = function(item) {
         console.log('on envoit sur la machine', item.machine);
         prodooMachine(item);
+    };
+
+    $scope.useOffcut = function(line) {
+      console.log('good boy ! you save the planet');
+      line.useOffcut = !line.useOffcut;
     };
 
     $scope.take = function(item) {
